@@ -7,15 +7,32 @@ const sheetsService = new GoogleSheetsService();
 const setupHandlers = (bot) => {
   const showClassMenu = (ctx) => {
     const classes = classesConfig.classes;
-    const buttons = [];
-    const columns = 3;
 
-    for (let i = 0; i < classes.length; i += columns) {
-      const row = classes.slice(i, i + columns).map(cls =>
-        Markup.button.callback(cls, `class_${cls}`)
-      );
+    const parsedClasses = classes.map(cls => {
+      const match = cls.match(/^(\d+)([а-яА-Яa-zA-Z]+)/);
+      return {
+        fullName: cls,
+        number: match ? parseInt(match[1]) : 0,
+        letter: match ? match[2] : ''
+      };
+    });
+
+    parsedClasses.sort((a, b) => a.number - b.number || a.letter.localeCompare(b.letter));
+
+    const groupedByNumber = {};
+    parsedClasses.forEach(cls => {
+      if (!groupedByNumber[cls.number]) {
+        groupedByNumber[cls.number] = [];
+      }
+      groupedByNumber[cls.number].push(cls.fullName);
+    });
+
+    const buttons = [];
+    Object.keys(groupedByNumber).forEach(number => {
+      const classGroup = groupedByNumber[number];
+      const row = classGroup.map(cls => Markup.button.callback(cls, `class_${cls}`));
       buttons.push(row);
-    }
+    });
 
     ctx.reply('Виберіть клас:', Markup.inlineKeyboard(buttons));
   };

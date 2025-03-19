@@ -65,6 +65,16 @@ const setupHandlers = (bot) => {
       return ctx.reply('Спочатку виберіть клас і тип!');
     }
 
+    if (ctx.message.text === '⬅️ Назад') {
+      const className = ctx.session.class;
+      ctx.session = { class: className };
+      return ctx.reply('Оберіть:', Markup.inlineKeyboard([
+        [Markup.button.callback('Цілий клас', `type_whole_${className}`)],
+        [Markup.button.callback('Група', `type_group_${className}`)],
+        [Markup.button.callback('⬅️ Назад', 'back_to_classes')]
+      ]));
+    }
+    
     const count = parseInt(ctx.message.text);
     if (isNaN(count) || count < 0 || count > process.env.MAX_ABSENT_STUDENT) {
       return ctx.reply('Будь ласка, введіть коректне число!', Markup.inlineKeyboard([

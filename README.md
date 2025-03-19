@@ -55,7 +55,7 @@ MAX_ABSENT_STUDENT= максимум відсутніх
 - Увімкніть **Google Sheets API** у Google Cloud Console. ☁️
 - Створіть **сервісний акаунт** дані помістіть в .env.
 - Надайте сервісному акаунту доступ до вашої Google таблиці.
-- У файлі `services/googleSheets.js` замініть `YOUR_SPREADSHEET_ID` на ID вашої Google таблиці.
+- У файлі `.env` замініть `YOUR_SPREADSHEET_ID` на ID вашої Google таблиці.
 
 ### 4. Налаштування класів
 

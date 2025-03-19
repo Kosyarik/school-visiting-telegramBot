@@ -5,81 +5,67 @@ const { Markup } = require('telegraf');
 const sheetsService = new GoogleSheetsService();
 
 const setupHandlers = (bot) => {
-  const showClassMenu = (ctx) => {
+  const getClassMenu = () => {
     const classes = classesConfig.classes;
     const buttons = [];
     const columns = 3;
 
     for (let i = 0; i < classes.length; i += columns) {
-      const row = classes.slice(i, i + columns).map(cls =>
-        Markup.button.callback(cls, `class_${cls}`)
-      );
+      const row = classes.slice(i, i + columns);
       buttons.push(row);
     }
-
-    ctx.reply('Виберіть клас:', Markup.inlineKeyboard(buttons));
+    return Markup.keyboard(buttons).resize();
   };
 
   bot.start((ctx) => {
-    ctx.reply('Ласкаво просимо! Виберіть клас нижче:'
-  ).then(() => showClassMenu(ctx));
+    ctx.reply('Ласкаво просимо! Виберіть клас нижче:', getClassMenu());
   });
 
   classesConfig.classes.forEach(cls => {
-    bot.action(`class_${cls}`, (ctx) => {
-      ctx.session = { class: cls };
-      ctx.reply('Оберіть:', Markup.inlineKeyboard([
-        [Markup.button.callback('Цілий клас', `type_whole_${cls}`)],
-        [Markup.button.callback('Група', `type_group_${cls}`)],
-        [Markup.button.callback('⬅️ Назад', 'back_to_classes')]
-      ]));
+    bot.hears(cls, (ctx) => {
+      ctx.session = { chatId: ctx.chat.id, class: cls };
+      ctx.reply('Оберіть:', Markup.keyboard([
+        ['Цілий клас', 'Група'],
+        ['⬅️ Назад']
+      ]).resize());
     });
   });
 
-  bot.action('back_to_classes', (ctx) => {
-    ctx.session = {};
-    showClassMenu(ctx);
+  bot.hears('⬅️ Назад', (ctx) => {
+    ctx.session = { chatId: ctx.chat.id };
+    ctx.reply('Виберіть клас:', getClassMenu());
   });
 
-  bot.action(/type_(whole|group)_(.+)/, (ctx) => {
-    const type = ctx.match[1];
-    const className = ctx.match[2];
-    ctx.session = { class: className, type: type === 'whole' ? 'whole' : 'group' };
-    const numberKeyboard = Markup.keyboard([
+  bot.hears(['Цілий клас', 'Група'], (ctx) => {
+    if (!ctx.session?.class) return;
+    
+    ctx.session.type = ctx.message.text === 'Цілий клас' ? 'whole' : 'group';
+    ctx.reply('Введіть кількість учнів:', Markup.keyboard([
       ['1', '2', '3'],
       ['4', '5', '6'],
       ['7', '8', '9'],
-      ['0', '⬅️ Назад'] 
-    ]).oneTime();
-
-    ctx.reply('Введіть кількість учнів:⬇️ ⬇️ ⬇️', {
-      reply_markup: Markup.inlineKeyboard([
-        [Markup.button.callback('⬅️ Назад', `class_${className}`)]
-      ]).reply_markup,
-      reply_markup: numberKeyboard.reply_markup
-    });
+      ['0', '⬅️ Назад']
+    ]).resize());
   });
 
   bot.on('text', async (ctx) => {
+    if (ctx.chat.id !== ctx.session?.chatId) return;
+
     if (!ctx.session?.class || !ctx.session?.type) {
-      return ctx.reply('Спочатку виберіть клас і тип!');
+      return ctx.reply('Спочатку виберіть клас і тип!', getClassMenu());
     }
 
     if (ctx.message.text === '⬅️ Назад') {
-      const className = ctx.session.class;
-      ctx.session = { class: className };
-      return ctx.reply('Оберіть:', Markup.inlineKeyboard([
-        [Markup.button.callback('Цілий клас', `type_whole_${className}`)],
-        [Markup.button.callback('Група', `type_group_${className}`)],
-        [Markup.button.callback('⬅️ Назад', 'back_to_classes')]
-      ]));
+      ctx.session = { chatId: ctx.chat.id, class: ctx.session.class };
+      return ctx.reply('Оберіть:', Markup.keyboard([
+        ['Цілий клас', 'Група'],
+        ['⬅️ Назад']
+      ]).resize());
     }
     
     const count = parseInt(ctx.message.text);
     if (isNaN(count) || count < 0 || count > process.env.MAX_ABSENT_STUDENT) {
-      return ctx.reply('Будь ласка, введіть коректне число!', Markup.inlineKeyboard([
-        [Markup.button.callback('⬅️ Назад', `class_${ctx.session.class}`)]
-      ]));
+      return ctx.reply('Будь ласка, введіть коректне число!');
     }
 
     try {
@@ -90,14 +76,12 @@ const setupHandlers = (bot) => {
         count,
         ctx.session.type === 'group'
       );
-      ctx.reply('🔥🔥🔥Дані успішно записані!🔥🔥🔥').then(() => showClassMenu(ctx));
+      ctx.reply('🔥🔥🔥 Дані успішно записані! 🔥🔥🔥', getClassMenu());
     } catch (error) {
-      ctx.reply('Помилка при записі даних: ' + error.message, Markup.inlineKeyboard([
-        [Markup.button.callback('⬅️ Назад', `class_${ctx.session.class}`)]
-      ]));
+      ctx.reply('Помилка при записі даних: ' + error.message);
     }
 
-    ctx.session = {};
+    ctx.session = { chatId: ctx.chat.id };
   });
 };
 

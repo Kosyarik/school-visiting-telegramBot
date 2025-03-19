@@ -45,7 +45,19 @@ const setupHandlers = (bot) => {
     const type = ctx.match[1];
     const className = ctx.match[2];
     ctx.session = { class: className, type: type === 'whole' ? 'whole' : 'group' };
-    ctx.reply('Введіть кількість учнів:⬇️ ⬇️ ⬇️ ');
+    const numberKeyboard = Markup.keyboard([
+      ['1', '2', '3'],
+      ['4', '5', '6'],
+      ['7', '8', '9'],
+      ['0', '⬅️ Назад'] 
+    ]).oneTime();
+
+    ctx.reply('Введіть кількість учнів:⬇️ ⬇️ ⬇️', {
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.callback('⬅️ Назад', `class_${className}`)]
+      ]).reply_markup,
+      reply_markup: numberKeyboard.reply_markup
+    });
   });
 
   bot.on('text', async (ctx) => {

@@ -47,6 +47,7 @@ PRIVATE_KEY_ID=your_bot_token_here
 PRIVATE_KEY=your_bot_token_here
 CLIENT_EMAIL=your_bot_token_here
 CLIENT_ID=your_bot_token_here
+MAX_ABSENT_STUDENT= максимум відсутніх 
 ```
 
 ### 3. Налаштування Google Sheets API

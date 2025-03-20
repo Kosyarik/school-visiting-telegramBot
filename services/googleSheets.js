@@ -43,62 +43,64 @@ class GoogleSheetsService {
     }
   
     normalizeDate(dateStr) {
-        if (!dateStr) return null;
-    
-        console.log('Original date string:', dateStr); 
-    
-        const cleanDateStr = dateStr.trim().replace(/^'/, ''); 
-    
-        const date = new Date(cleanDateStr);
-        
-        if (isNaN(date)) {
-            console.error('Invalid date format');
-            return null;
-        }
-    
-        return this.formatDateToDDMMYYYY(date);
+      if (!dateStr) return null;
+      console.log('Original date string:', dateStr);
+      const cleanDateStr = dateStr.trim().replace(/^'/, '');
+
+      let date;
+      if (cleanDateStr.includes('.')) {
+        // Handle "DD.MM.YYYY" format
+        const [day, month, year] = cleanDateStr.split('.');
+        date = new Date(year, month - 1, day); 
+      } else {
+        date = new Date(cleanDateStr); 
+      }
+
+      if (isNaN(date.getTime())) {
+        console.error('Invalid date format');
+        return null;
+      }
+
+      console.log('Parsed date:', date);
+      return this.formatDateToDDMMYYYY(date);
     }
-    
-    
   
     async updateSheet(className, date, value, isGroup) {
-        const formattedDate = this.normalizeDate(date);
-        if (!formattedDate) throw new Error('Invalid date format');
-      
-        const cleanDate = formattedDate.trim();
-      
-        const academicYear = this.getAcademicYear(date);
-        const sheetName = `${academicYear.startYear}/${academicYear.endYear}`;
-      
-        await this.ensureSheetExists(sheetName);
-        const colIndex = await this.ensureDateColumn(sheetName, cleanDate);
-        const rowIndex = this.getRowIndex(className);
-      
-        if (!rowIndex || !colIndex) throw new Error('Invalid class or date');
-      
-        const range = `${sheetName}!${colIndex}${rowIndex}`;
-        let currentValue = 0;
-      
-        if (isGroup) {
-            const response = await this.sheets.spreadsheets.values.get({
-                spreadsheetId: this.spreadsheetId,
-                range: range,
-            });
-            currentValue = parseInt(response.data.values?.[0]?.[0] || 0);
-        }
-      
-        const newValue = isGroup ? currentValue + value : value;
-      
-        await this.sheets.spreadsheets.values.update({
-            spreadsheetId: this.spreadsheetId,
-            range: range,
-            valueInputOption: 'RAW',
-            resource: { values: [[newValue]] },
+      const formattedDate = this.normalizeDate(date);
+      if (!formattedDate) throw new Error('Invalid date format');
+    
+      const cleanDate = formattedDate.trim();
+    
+      const academicYear = this.getAcademicYear(date);
+      const sheetName = `${academicYear.startYear}/${academicYear.endYear}`;
+    
+      await this.ensureSheetExists(sheetName);
+      const colIndex = await this.ensureDateColumn(sheetName, cleanDate);
+      const rowIndex = this.getRowIndex(className);
+    
+      if (!rowIndex || !colIndex) throw new Error('Invalid class or date');
+    
+      const range = `${sheetName}!${colIndex}${rowIndex}`;
+      console.log('Updating range:', range);
+      let currentValue = 0;
+    
+      if (isGroup) {
+        const response = await this.sheets.spreadsheets.values.get({
+          spreadsheetId: this.spreadsheetId,
+          range: range,
         });
+        currentValue = parseInt(response.data.values?.[0]?.[0] || 0);
+      }
+    
+      const newValue = isGroup ? currentValue + value : value;
+    
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: this.spreadsheetId,
+        range: range,
+        valueInputOption: 'RAW',
+        resource: { values: [[newValue]] },
+      });
     }
-    
-    
-      
   
     async ensureSheetExists(sheetName) {
       const spreadsheet = await this.sheets.spreadsheets.get({
@@ -123,14 +125,16 @@ class GoogleSheetsService {
         spreadsheetId: this.spreadsheetId,
         range: `${sheetName}!1:1`,
       });
-  
       const dates = response.data.values ? response.data.values[0] : [];
-      let colIndex = -1;
-  
+      console.log('Dates in sheet:', dates);
+
       const normalizedTargetDate = this.normalizeDate(date);
-  
+      console.log('Normalized target date:', normalizedTargetDate);
+
+      let colIndex = -1;
       for (let i = 0; i < dates.length; i++) {
         const normalizedDate = this.normalizeDate(dates[i]);
+        console.log(`Comparing ${normalizedDate} with ${normalizedTargetDate}`);
         if (normalizedDate === normalizedTargetDate) {
           colIndex = i;
           break;
@@ -139,10 +143,8 @@ class GoogleSheetsService {
   
       if (colIndex === -1) {
         colIndex = dates.length;
-        const colLetter = this.numberToColumn(colIndex + 2);
-  
-        console.log(`Додаємо нову дату: ${date} в колонку ${colLetter}`);
-  
+        const colLetter = this.numberToColumn(colIndex + 1);
+        console.log(`Adding new date ${date} to column ${colLetter}`);
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.spreadsheetId,
           range: `${sheetName}!${colLetter}1`,
@@ -151,7 +153,9 @@ class GoogleSheetsService {
         });
       }
   
-      return this.numberToColumn(colIndex + 2);
+      const finalCol = this.numberToColumn(colIndex + 1);
+      console.log('Selected column:', finalCol);
+      return finalCol;
     }
   
     async initializeSheet(sheetName) {
@@ -186,6 +190,6 @@ class GoogleSheetsService {
     getRowIndex(className) {
       return this.classMap[className];
     }
-  }
+}
   
-  module.exports = GoogleSheetsService;
+module.exports = GoogleSheetsService;

@@ -49,11 +49,10 @@ class GoogleSheetsService {
 
       let date;
       if (cleanDateStr.includes('.')) {
-        // Handle "DD.MM.YYYY" format
         const [day, month, year] = cleanDateStr.split('.');
-        date = new Date(year, month - 1, day); 
+        date = new Date(year, month - 1, day);
       } else {
-        date = new Date(cleanDateStr); 
+        date = new Date(cleanDateStr);
       }
 
       if (isNaN(date.getTime())) {
@@ -140,20 +139,23 @@ class GoogleSheetsService {
           break;
         }
       }
-  
+
+      let finalCol;
       if (colIndex === -1) {
         colIndex = dates.length;
-        const colLetter = this.numberToColumn(colIndex + 1);
-        console.log(`Adding new date ${date} to column ${colLetter}`);
+        finalCol = this.numberToColumn(colIndex + 2);
+        console.log(`Adding new date ${date} to column ${finalCol}`);
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.spreadsheetId,
-          range: `${sheetName}!${colLetter}1`,
+          range: `${sheetName}!${finalCol}1`,
           valueInputOption: 'RAW',
           resource: { values: [[date]] },
         });
+      } else {
+        finalCol = this.numberToColumn(colIndex + 1);
+        console.log(`Date ${date} already exists in column ${finalCol}`);
       }
-  
-      const finalCol = this.numberToColumn(colIndex + 1);
+
       console.log('Selected column:', finalCol);
       return finalCol;
     }

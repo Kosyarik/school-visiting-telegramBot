@@ -143,7 +143,7 @@ class GoogleSheetsService {
       let finalCol;
       if (colIndex === -1) {
         colIndex = dates.length;
-        finalCol = this.numberToColumn(colIndex + 2);
+        finalCol = this.numberToColumn(colIndex + 1);
         console.log(`Adding new date ${date} to column ${finalCol}`);
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.spreadsheetId,

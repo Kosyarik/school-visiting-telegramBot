@@ -84,7 +84,7 @@ const setupHandlers = (bot) => {
       if (kuratorId) {
         await ctx.telegram.sendMessage(
           kuratorId,
-          `📢 Оновлення для класу ${className} (${today}):\n` +
+          `📢 Оновлення для класу ${ctx.session.class} (${today}):\n` +
           `Кількість відсутніх: ${count}, Тип: ${ctx.session.type === 'group' ? 'Група' : 'Цілий клас'}`
         );
       } else {

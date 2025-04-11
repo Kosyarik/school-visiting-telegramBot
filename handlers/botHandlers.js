@@ -80,17 +80,34 @@ const setupHandlers = (bot) => {
         count,
         ctx.session.type === 'group'
       );
-      const kuratorId = classesConfig.kurators[ctx.session.class];
-      if (kuratorId) {
+      ctx.reply('🔥🔥🔥 Дані успішно записані! 🔥🔥🔥', getClassMenu());
+
+      const allFilled  = await sheetsService.areAllClassesFilled(today);
+      const kuratorIds = classesConfig.kurators[ctx.session.class];
+
+      if (kuratorIds && Array.isArray(kuratorIds)) {
+        for (const kuratorId of kuratorIds) {
         await ctx.telegram.sendMessage(
           kuratorId,
-          `📢 Оновлення для класу ${ctx.session.class} (${today}):\n` +
+          `📢Оновлення для класу ${ctx.session.class} на ${today}\n 📢` +
           `Кількість відсутніх: ${count}, Тип: ${ctx.session.type === 'group' ? 'Група' : 'Цілий клас'}`
         );
+      }
       } else {
         console.log(`Куратор для класу ${className} не знайдений`);
       }
-      ctx.reply('🔥🔥🔥 Дані успішно записані! 🔥🔥🔥', getClassMenu());
+
+      if(allFilled) {
+        const sum  = await sheetsService.sumAllClasses(today);
+        const adminChatIds = classesConfig.adminChatIds;
+        for (const adminChatId of adminChatIds) {
+        await ctx.telegram.sendMessage(
+          adminChatId,
+          `📢 Усі класи за ${today} заповнені!\n` +
+          `Загальна кількість відсутніх учнів: ${sum}`
+        );
+      }
+      }
     } catch (error) {
       ctx.reply('Помилка при записі даних: ' + error.message);
     }

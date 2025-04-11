@@ -169,6 +169,68 @@ class GoogleSheetsService {
         resource: { values },
       });
     }
+
+    async areAllClassesFilled(date) {
+      const formattedDate = this.normalizeDate(date);
+      if (!formattedDate) throw new Error('Invalid date format');
+  
+      const cleanDate = formattedDate.trim();
+      const academicYear = this.getAcademicYear(date);
+      const sheetName = `${academicYear.startYear}/${academicYear.endYear}`;
+  
+      await this.ensureSheetExists(sheetName);
+  
+      const colIndex = await this.ensureDateColumn(sheetName, cleanDate);
+      if (!colIndex) throw new Error('Date column not found');
+  
+      const range = `${sheetName}!${colIndex}2:${colIndex}${classesConfig.classes.length + 1}`;
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: this.spreadsheetId,
+        range,
+      });
+  
+      const values = response.data.values || [];
+      console.log(`Values for ${cleanDate} in ${sheetName}:`, values);
+  
+      for (let i = 0; i < classesConfig.classes.length; i++) {
+        const value = values[i]?.[0];
+        if (value === undefined || value === '' || isNaN(parseInt(value))) {
+          console.log(`Class ${classesConfig.classes[i]} has no valid data for ${cleanDate}`);
+          return false;
+        }
+      }
+  
+      console.log(`All classes have valid data for ${cleanDate}`);
+      return true;
+    }
+
+    async sumAllClasses(date) {
+      const formattedDate = this.normalizeDate(date);
+      if (!formattedDate) throw new Error('Invalid date format');
+  
+      const cleanDate = formattedDate.trim();
+      const academicYear = this.getAcademicYear(date);
+      const sheetName = `${academicYear.startYear}/${academicYear.endYear}`;
+  
+      await this.ensureSheetExists(sheetName);
+  
+      const colIndex = await this.ensureDateColumn(sheetName, cleanDate);
+      if (!colIndex) throw new Error('Date column not found');
+  
+      const sumRow = classesConfig.classes.length + 2; 
+      const sumRange = `${sheetName}!${colIndex}${sumRow}`;
+      console.log(`Fetching sum from range: ${sumRange}`);
+  
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: this.spreadsheetId,
+        range: sumRange,
+      });
+  
+      const sum = parseInt(response.data.values?.[0]?.[0]) || 0;
+      console.log(`Sum for ${cleanDate} in ${sumRange}: ${sum}`);
+  
+      return sum;
+    }
   
     getAcademicYear(date) {
       const currentDate = new Date(date);

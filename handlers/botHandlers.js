@@ -21,6 +21,10 @@ const setupHandlers = (bot) => {
     ctx.reply('Ласкаво просимо! Виберіть клас нижче:', getClassMenu());
   });
 
+  bot.command('getid', (ctx) => {
+    ctx.reply(`Ваш chatId: ${ctx.chat.id}`);
+  });
+
   classesConfig.classes.forEach(cls => {
     bot.hears(cls, (ctx) => {
       ctx.session = { chatId: ctx.chat.id, class: cls };

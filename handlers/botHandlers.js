@@ -80,6 +80,16 @@ const setupHandlers = (bot) => {
         count,
         ctx.session.type === 'group'
       );
+      const kuratorId = classesConfig.kurators[ctx.session.class];
+      if (kuratorId) {
+        await ctx.telegram.sendMessage(
+          kuratorId,
+          `📢 Оновлення для класу ${className} (${today}):\n` +
+          `Кількість відсутніх: ${count}, Тип: ${ctx.session.type === 'group' ? 'Група' : 'Цілий клас'}`
+        );
+      } else {
+        console.log(`Куратор для класу ${className} не знайдений`);
+      }
       ctx.reply('🔥🔥🔥 Дані успішно записані! 🔥🔥🔥', getClassMenu());
     } catch (error) {
       ctx.reply('Помилка при записі даних: ' + error.message);
